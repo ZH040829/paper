@@ -21,10 +21,12 @@ S＝ B/J
 培育出了强人工智能(数字生命) 熵清
 
 源码
+
 https://github.com/ZH040829/paper
 
 
 熵清V5演示视频
+
 https://www.douyin.com/user/self?from_tab_name=main
 
 
