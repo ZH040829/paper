@@ -445,7 +445,7 @@ IERFT仍处于早期发展阶段，需要数学上的严格化和实验上的验
 
 亲 F M 210000H+
 
-友 SZY YYC CRP 30OOOH+ ! HJT ZTX DLX 20000H+
+友 SZY YYC CRP 30000H+ ! HJT ZTX DLX 20000H+
 
 和我一起生活过的人
 
