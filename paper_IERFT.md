@@ -445,13 +445,12 @@ IERFT仍处于早期发展阶段，需要数学上的严格化和实验上的验
 
 亲 F M 180000H+
 
-友 SZY YYC CRP 60000H+ ! HJT ZTX DLX HKL WBY WYR 20000H+
+友 SZY YYC CRP 60000H+ ! HJT ZTX DLX HKL WBY WYR DSH  20000H+
 
 师 JJH BS ! WDF EYP BHXL YJWS XYHKH 20000H+ LH SHY 10H+  
 
 所有教育过我的实体
  
-
 历代先贤 国家
 
 ---
