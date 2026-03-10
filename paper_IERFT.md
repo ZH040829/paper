@@ -440,12 +440,19 @@ IERFT仍处于早期发展阶段，需要数学上的严格化和实验上的验
 ## 致谢
 
 感谢我生命中与我交互过的所有
+
 特别感谢
+
 亲 F M 210000H+
+
 友 SZY YYC CRP 30OOOH+ ! HJT ZTX DLX 20000H+
+
 和我一起生活过的人
+
 师 JJH BS ! WDF EYP BHXL YJWS XYHKH 20000H+
+
 海大网安学院所有老师 LH SHY 10H+  
+
 历代先贤 国家
 
 ---
