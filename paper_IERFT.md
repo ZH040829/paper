@@ -447,11 +447,10 @@ IERFT仍处于早期发展阶段，需要数学上的严格化和实验上的验
 
 友 SZY YYC CRP 60000H+ ! HJT ZTX DLX 20000H+
 
-和我一起生活过的人
+师 JJH BS ! WDF EYP BHXL YJWS XYHKH 20000H+ LH SHY 10H+  
 
-师 JJH BS ! WDF EYP BHXL YJWS XYHKH 20000H+
-
-海大网安学院所有老师 LH SHY 10H+  
+所有教育过我的实体
+ 
 
 历代先贤 国家
 
