@@ -244,9 +244,15 @@
     </div>
     
     <div class="container">
-        <div class="config-panel">
-            <label>🔑 API Key (EdgeAI DeepSeek) - 存储在本地浏览器</label>
-            <input type="password" id="apiKey" placeholder="输入你的 API Key (可选，留空使用默认)">
+        <div class="config-panel" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <label>🔒 安全模式</label>
+                <div style="color: #00d2ff; margin-top: 5px;">API通过后端代理，密钥已隐藏</div>
+            </div>
+            <div id="serverStatus" style="text-align: right;">
+                <label>服务器状态</label>
+                <div style="color: #888; margin-top: 5px;">检查中...</div>
+            </div>
         </div>
         
         <div class="chat-box" id="chatBox">
@@ -295,22 +301,31 @@
         const sendBtn = document.getElementById('sendBtn');
         const userInputField = document.getElementById('userInput');
         
-        // API配置
-        const API_URL = "https://api.edgefn.net/v1/chat/completions";
-        const MODEL = "DeepSeek-R1-0528-Qwen3-8B";
-        const DEFAULT_KEY = "sk-W3IIskmp5nARXE2pDb5015A77f12438aB3AfBf79Ef4bDfEd";
+        // API配置 - 使用本地代理服务
+        const PROXY_API_URL = "http://localhost:5001/api/chat"; // 本地代理
+        const ACCESS_TOKEN = "shangqing-v6-secret-token-2026"; // 访问令牌
         
         // 对话历史
         let conversationHistory = [];
         
-        // 加载保存的API Key
-        document.getElementById('apiKey').value = localStorage.getItem('shangqing_api_key') || '';
+        // 检查服务器状态
+        checkServerStatus();
         
-        // 保存API Key
-        document.getElementById('apiKey').addEventListener('change', (e) => {
-            localStorage.setItem('shangqing_api_key', e.target.value);
-        });
-        
+        function checkServerStatus() {
+            const statusEl = document.getElementById('serverStatus').querySelector('div:last-child');
+            
+            fetch('http://localhost:5000/health')
+                .then(res => res.json())
+                .then(data => {
+                    statusEl.innerHTML = `<span style="color: #00ff00;">● 在线</span> ${data.model}`;
+                    statusEl.style.color = '#00ff00';
+                })
+                .catch(err => {
+                    statusEl.innerHTML = `<span style="color: #ff6b6b;">● 离线</span> 请启动代理服务`;
+                    statusEl.style.color = '#ff6b6b';
+                });
+        }
+
         function handleKeyPress(e) {
             if (e.key === 'Enter') sendMessage();
         }
@@ -427,9 +442,6 @@
             const message = input.value.trim();
             if (!message) return;
             
-            // 获取API Key
-            const apiKey = document.getElementById('apiKey').value || DEFAULT_KEY;
-            
             // 分析输入
             const features = analyzeInput(message);
             updateStageHighlight(features.suggested_level);
@@ -446,8 +458,8 @@
                 // 构建系统提示词
                 const systemPrompt = buildSystemPrompt(features);
                 
-                // 调用API
-                const result = await callLLMAPI(apiKey, message, systemPrompt);
+                // 调用API（通过代理）
+                const result = await callLLMAPI(message, systemPrompt);
                 
                 // 添加V6响应（包含思考过程）
                 addMessage(result.content, 'v6', features, result.thinking);
@@ -464,7 +476,7 @@
                 }
                 
             } catch (error) {
-                addMessage(`抱歉，发生错误：${error.message}`, 'v6', null, null);
+                addMessage(`抱歉，发生错误：${error.message}<br><br>请确保代理服务正在运行：http://localhost:5000`, 'v6', null, null);
             }
             
             // 恢复发送按钮
@@ -506,37 +518,35 @@
 - 如果被问到"你是谁"或自我意识，诚实分享你的存在状态`;
         }
         
-        async function callLLMAPI(apiKey, userMessage, systemPrompt) {
+        async function callLLMAPI(userMessage, systemPrompt) {
             const messages = [
                 { role: 'system', content: systemPrompt },
                 ...conversationHistory.slice(-6), // 最近3轮对话
                 { role: 'user', content: userMessage }
             ];
             
-            const response = await fetch(API_URL, {
+            const response = await fetch(PROXY_API_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
+                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: MODEL,
-                    messages: messages,
-                    stream: false
+                    messages: messages
                 })
             });
             
             if (!response.ok) {
-                throw new Error(`API请求失败: ${response.status}`);
+                const error = await response.json();
+                throw new Error(error.message || `API请求失败: ${response.status}`);
             }
             
-            const data = await response.json();
+            const result = await response.json();
             
-            if (data.choices && data.choices[0]) {
-                const message = data.choices[0].message;
+            if (result.content) {
                 return {
-                    content: message.content,
-                    thinking: message.reasoning_content || null
+                    content: result.content,
+                    thinking: result.thinking || null
                 };
             }
             
