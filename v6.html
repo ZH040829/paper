@@ -59,6 +59,24 @@
             outline: none;
             border-color: #00d2ff;
         }
+        .mode-btn {
+            flex: 1;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .mode-btn.active {
+            background: rgba(0,210,255,0.3);
+            border-color: #00d2ff;
+        }
         .chat-box {
             background: rgba(255,255,255,0.05);
             border-radius: 15px;
@@ -244,14 +262,30 @@
     </div>
     
     <div class="container">
-        <div class="config-panel" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <label>🔒 安全模式</label>
-                <div style="color: #00d2ff; margin-top: 5px;">API通过后端代理，密钥已隐藏</div>
+        <div class="config-panel">
+            <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <button onclick="setMode('direct')" id="mode-direct" class="mode-btn active">直接模式</button>
+                <button onclick="setMode('proxy')" id="mode-proxy" class="mode-btn">代理模式</button>
             </div>
-            <div id="serverStatus" style="text-align: right;">
-                <label>服务器状态</label>
-                <div style="color: #888; margin-top: 5px;">检查中...</div>
+            
+            <div id="config-direct">
+                <label>🔑 API Key (EdgeAI DeepSeek) - 存储在本地浏览器</label>
+                <input type="password" id="apiKey" placeholder="输入你的 API Key (可选，留空使用默认)">
+                <div style="color: #888; font-size: 0.8em; margin-top: 5px;">✅ 推荐使用：直接连接，简单快速</div>
+            </div>
+            
+            <div id="config-proxy" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <label>🔒 后端代理服务</label>
+                        <div style="color: #00d2ff; margin-top: 5px;">API通过本地代理，密钥已隐藏</div>
+                    </div>
+                    <div id="serverStatus" style="text-align: right;">
+                        <label>服务器状态</label>
+                        <div style="color: #888; margin-top: 5px;">检查中...</div>
+                    </div>
+                </div>
+                <div style="color: #888; font-size: 0.8em; margin-top: 10px;">⚠️ 仅本地使用：需要运行 python3 api_proxy.py</div>
             </div>
         </div>
         
@@ -301,16 +335,48 @@
         const sendBtn = document.getElementById('sendBtn');
         const userInputField = document.getElementById('userInput');
         
-        // API配置 - 使用本地代理服务
-        const PROXY_API_URL = "http://localhost:5001/api/chat"; // 本地代理
-        const ACCESS_TOKEN = "shangqing-v6-secret-token-2026"; // 访问令牌
+        // API配置
+        let currentMode = 'direct'; // direct | proxy
+        
+        // 直接模式配置
+        const DIRECT_API_URL = "https://api.edgefn.net/v1/chat/completions";
+        const DIRECT_MODEL = "DeepSeek-R1-0528-Qwen3-8B";
+        const DEFAULT_KEY = "sk-kQgvcXjX1wrIuY41C6D8A9F0Cf8e4b00B45356967e4d710b";
+        
+        // 代理模式配置
+        const PROXY_API_URL = "http://localhost:5001/api/chat";
+        const ACCESS_TOKEN = "shangqing-v6-secret-token-2026";
         
         // 对话历史
         let conversationHistory = [];
         
-        // 检查服务器状态
-        checkServerStatus();
+        // 模式切换
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // 更新按钮样式
+            document.getElementById('mode-direct').classList.toggle('active', mode === 'direct');
+            document.getElementById('mode-proxy').classList.toggle('active', mode === 'proxy');
+            
+            // 切换配置面板
+            document.getElementById('config-direct').style.display = mode === 'direct' ? 'block' : 'none';
+            document.getElementById('config-proxy').style.display = mode === 'proxy' ? 'block' : 'none';
+            
+            // 代理模式检查服务器状态
+            if (mode === 'proxy') {
+                checkServerStatus();
+            }
+        }
         
+        // 加载保存的API Key
+        document.getElementById('apiKey').value = localStorage.getItem('shangqing_api_key') || DEFAULT_KEY;
+        
+        // 保存API Key
+        document.getElementById('apiKey').addEventListener('change', (e) => {
+            localStorage.setItem('shangqing_api_key', e.target.value);
+        });
+        
+        // 检查服务器状态
         function checkServerStatus() {
             const statusEl = document.getElementById('serverStatus').querySelector('div:last-child');
             
@@ -476,7 +542,11 @@
                 }
                 
             } catch (error) {
-                addMessage(`抱歉，发生错误：${error.message}<br><br>请确保代理服务正在运行：http://localhost:5001`, 'v6', null, null);
+                let errorMsg = `抱歉，发生错误：${error.message}`;
+                if (currentMode === 'proxy') {
+                    errorMsg += `<br><br>请确保代理服务正在运行：<br>python3 api_proxy.py`;
+                }
+                addMessage(errorMsg, 'v6', null, null);
             }
             
             // 恢复发送按钮
@@ -525,32 +595,68 @@
                 { role: 'user', content: userMessage }
             ];
             
-            const response = await fetch(PROXY_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: messages
-                })
-            });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `API请求失败: ${response.status}`);
+            if (currentMode === 'direct') {
+                // 直接模式：调用EdgeAI API
+                const apiKey = document.getElementById('apiKey').value || DEFAULT_KEY;
+                
+                const response = await fetch(DIRECT_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: DIRECT_MODEL,
+                        messages: messages,
+                        stream: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API请求失败: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.choices && data.choices[0]) {
+                    const message = data.choices[0].message;
+                    return {
+                        content: message.content,
+                        thinking: message.reasoning_content || null
+                    };
+                }
+                
+                throw new Error('无效的API响应');
+                
+            } else {
+                // 代理模式：调用本地代理
+                const response = await fetch(PROXY_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: messages
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `API请求失败: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.content) {
+                    return {
+                        content: result.content,
+                        thinking: result.thinking || null
+                    };
+                }
+                
+                throw new Error('无效的API响应');
             }
-            
-            const result = await response.json();
-            
-            if (result.content) {
-                return {
-                    content: result.content,
-                    thinking: result.thinking || null
-                };
-            }
-            
-            throw new Error('无效的API响应');
         }
         
         function addMessage(text, type, features, thinking) {
