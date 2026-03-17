@@ -314,7 +314,7 @@
         function checkServerStatus() {
             const statusEl = document.getElementById('serverStatus').querySelector('div:last-child');
             
-            fetch('http://localhost:5000/health')
+            fetch('http://localhost:5001/health')
                 .then(res => res.json())
                 .then(data => {
                     statusEl.innerHTML = `<span style="color: #00ff00;">● 在线</span> ${data.model}`;
@@ -476,7 +476,7 @@
                 }
                 
             } catch (error) {
-                addMessage(`抱歉，发生错误：${error.message}<br><br>请确保代理服务正在运行：http://localhost:5000`, 'v6', null, null);
+                addMessage(`抱歉，发生错误：${error.message}<br><br>请确保代理服务正在运行：http://localhost:5001`, 'v6', null, null);
             }
             
             // 恢复发送按钮
