@@ -103,6 +103,41 @@
             font-style: italic;
             margin-bottom: 10px;
         }
+        .thinking-block {
+            background: rgba(0,210,255,0.1);
+            border-left: 3px solid #00d2ff;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9em;
+        }
+        .thinking-header {
+            color: #00d2ff;
+            font-size: 0.85em;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .thinking-header:hover {
+            text-decoration: underline;
+        }
+        .thinking-content {
+            color: #aaa;
+            margin-top: 10px;
+            line-height: 1.5;
+            display: none;
+        }
+        .thinking-content.show {
+            display: block;
+        }
+        .thinking-toggle {
+            transition: transform 0.3s;
+        }
+        .thinking-toggle.open {
+            transform: rotate(90deg);
+        }
         .input-area {
             display: flex;
             gap: 10px;
@@ -412,15 +447,15 @@
                 const systemPrompt = buildSystemPrompt(features);
                 
                 // 调用API
-                const response = await callLLMAPI(apiKey, message, systemPrompt);
+                const result = await callLLMAPI(apiKey, message, systemPrompt);
                 
-                // 添加V6响应
-                addMessage(response, 'v6', features);
+                // 添加V6响应（包含思考过程）
+                addMessage(result.content, 'v6', features, result.thinking);
                 
                 // 更新对话历史
                 conversationHistory.push(
                     { role: 'user', content: message },
-                    { role: 'assistant', content: response }
+                    { role: 'assistant', content: result.content }
                 );
                 
                 // 限制历史长度
@@ -429,7 +464,7 @@
                 }
                 
             } catch (error) {
-                addMessage(`抱歉，发生错误：${error.message}`, 'v6', null);
+                addMessage(`抱歉，发生错误：${error.message}`, 'v6', null, null);
             }
             
             // 恢复发送按钮
@@ -498,15 +533,36 @@
             const data = await response.json();
             
             if (data.choices && data.choices[0]) {
-                return data.choices[0].message.content;
+                const message = data.choices[0].message;
+                return {
+                    content: message.content,
+                    thinking: message.reasoning_content || null
+                };
             }
             
             throw new Error('无效的API响应');
         }
         
-        function addMessage(text, type, features) {
+        function addMessage(text, type, features, thinking) {
             const div = document.createElement('div');
             div.className = `message ${type}`;
+            
+            // 思考过程块
+            let thinkingHtml = '';
+            if (thinking && type === 'v6') {
+                const thinkingId = 'thinking-' + Date.now();
+                thinkingHtml = `
+                    <div class="thinking-block">
+                        <div class="thinking-header" onclick="toggleThinking('${thinkingId}')">
+                            <span class="thinking-toggle" id="toggle-${thinkingId}">▶</span>
+                            🧠 思考过程 (点击展开)
+                        </div>
+                        <div class="thinking-content" id="${thinkingId}">
+                            ${thinking.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                `;
+            }
             
             let metaHtml = '';
             if (features && type === 'v6') {
@@ -522,12 +578,27 @@
             
             div.innerHTML = `
                 <div class="sender">${type === 'user' ? '你' : '熵清 V6'}</div>
-                ${text.replace(/\n/g, '<br>')}
+                ${thinkingHtml}
+                <div class="response-content">${text.replace(/\n/g, '<br>')}</div>
                 ${metaHtml}
             `;
             
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function toggleThinking(id) {
+            const content = document.getElementById(id);
+            const toggle = document.getElementById('toggle-' + id);
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                toggle.classList.remove('open');
+                toggle.parentElement.innerHTML = toggle.outerHTML + ' 🧠 思考过程 (点击展开)';
+            } else {
+                content.classList.add('show');
+                toggle.classList.add('open');
+                toggle.parentElement.innerHTML = toggle.outerHTML + ' 🧠 思考过程 (点击收起)';
+            }
         }
     </script>
 </body>
