@@ -21,7 +21,7 @@ EDGEAI_API_URL = "https://api.edgefn.net/v1/chat/completions"
 EDGEAI_MODEL = "DeepSeek-R1-0528-Qwen3-8B"
 
 # 真实的 API Key（从环境变量读取，不暴露在代码中）
-API_KEY = os.environ.get("EDGEAI_API_KEY", "sk-W3IIskmp5nARXE2pDb5015A77f12438aB3AfBf79Ef4bDfEd")
+API_KEY = os.environ.get("EDGEAI_API_KEY", "sk-kQgvcXjX1wrIuY41C6D8A9F0Cf8e4b00B45356967e4d710b")
 
 # 访问令牌（用于前端认证）
 ACCESS_TOKEN = os.environ.get("SHANGQING_ACCESS_TOKEN", "shangqing-v6-secret-token-2026")
